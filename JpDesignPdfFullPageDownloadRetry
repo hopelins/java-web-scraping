@@ -1,0 +1,105 @@
+package jpo.util.crawler;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.PosixParser;
+import org.jongo.MongoCollection;
+import org.jongo.MongoCursor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.mongo.service.JongoUtil;
+
+import jpo.util.crawler.model.JpDesignFullPageCrawlerLog;
+import patentdata.utils.INQRestTimeProcess;
+
+public class JpDesignPdfFullPageDownloadRetry {
+	private static Logger logger = LoggerFactory.getLogger(JpDesignPdfFullPageDownloadRetry.class);
+
+
+	private void crawlerRetryProcess(String dl, String query) {
+
+		logger.info("query statment : "+query);
+		JpDesignPdfFullPageCrawler crawler = new JpDesignPdfFullPageCrawler();
+		MongoCollection monogo4log = JongoUtil.getMongoVivaJpDesignFullPageLog();
+		logger.info("mongo :"+monogo4log +"connected");
+
+		MongoCursor<JpDesignFullPageCrawlerLog> allLog = monogo4log.find(query).as(JpDesignFullPageCrawlerLog.class);
+		logger.info("total files to retry :" + allLog.count());
+
+		INQRestTimeProcess rtp = new INQRestTimeProcess(Long.parseLong(String.valueOf(allLog.count())),
+				"execute [" + query + "]");
+
+		while (allLog.hasNext()) {
+			rtp.process();
+			JpDesignFullPageCrawlerLog log = allLog.next();
+			logger.info("crawling : " + log.getDocNo());
+			crawler.crawlerProcess(dl, log);
+			monogo4log.save(log);
+			logger.info("successed : " + log.getDocNo());
+
+		}
+
+	}
+
+	private String genQuery(Boolean downloaded, String beginDate, String endDate) {
+		String query = String.format("{downloaded:%s,gazette_public_date:{$gte:\"%s\"},gazette_public_date:{$lte:\"%s\"}}", downloaded, beginDate, endDate);
+		
+
+
+		return query;
+	}
+
+	public static void main(String[] args) {
+
+//		args = new String[] { "-b", "2019-05-01", "-e", "2019-05-27", "-dl", "D:\\xxxxxxx\\xxxxxxx", "-p",
+//				"xx.xx.xx.xxx:xxx" };
+		
+		// when running on server xx.xx dl = /mnt/xxxxx/xxxx/data/xxxxx/2019/05
+		
+		Options options = new Options();
+		options.addOption("h", "help", false, "Lists short help");
+		options.addOption("b", "beginDate", true, "set begin time");
+		options.addOption("e", "endDate", true, "set end time");
+		options.addOption("dl", "downloadLocation", true, "download to specific location");
+		options.addOption("p", "proxy:port", true, "proxy:port");
+
+		CommandLineParser parser = new PosixParser();
+		HelpFormatter formatter = new HelpFormatter();
+		CommandLine cmd = null;
+		String proxyIp = null;
+		String proxyPort = null;
+
+		try {
+			cmd = parser.parse(options, args);
+		} catch (ParseException e) {
+			formatter.printHelp("input beginDate, endDate, downloadLocation, and port", options);
+			System.exit(1);
+		}
+		String beginDate = cmd.getOptionValue("b");
+		String endDate = cmd.getOptionValue("e");
+		String downloadLoction = cmd.getOptionValue("dl");
+		if (cmd.hasOption("p")) {
+			String[] proxy = cmd.getOptionValue("p").split(":");
+			proxyIp = proxy[0];// "xx.xx.xx.xxx"
+			proxyPort = proxy[1];// "xxx"
+			logger.info("Set proxy ip:" + proxyIp);
+			logger.info("Set proxy port:" + proxyPort);
+		}
+
+		try {
+
+			JpDesignPdfFullPageDownloadRetry retryProcess = new JpDesignPdfFullPageDownloadRetry();
+			String queryDoc = retryProcess.genQuery(false,beginDate, endDate);
+			System.out.println(queryDoc);
+			retryProcess.crawlerRetryProcess(downloadLoction, queryDoc);
+		} catch (Exception e) {
+			logger.info("Exception :" + e);
+		}
+
+	}
+
+}

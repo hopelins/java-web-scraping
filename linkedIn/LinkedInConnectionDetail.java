@@ -22,13 +22,11 @@ import org.slf4j.LoggerFactory;
 
 import com.mongo.service.JongoUtil;
 
-import patentdata.utils.INQRestTimeProcess;
-
 public class LinkedInConnectionDetail {
 
 	private static Logger logger = LoggerFactory.getLogger(LinkedInConnectionDetail.class);
-	final static String LOGIN_EMAIL = "yp@inquartik.com";
-	final static String LOGIN_PWD = "A1b2c3d4";
+	final static String LOGIN_EMAIL = "yourlinkedinaccount";
+	final static String LOGIN_PWD = "yourlinkedinpassword";
 //	final static String MONGO_QUERY = "{email:null}";
 //	final static String MONGO_QUERY = "{}";
 

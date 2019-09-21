@@ -27,8 +27,8 @@ import patentdata.utils.INQRestTimeProcess;
 public class LinkedInConnectionDetailCircle {
 
 	private static Logger logger = LoggerFactory.getLogger(LinkedInConnectionDetailCircle.class);
-	final static String LOGIN_EMAIL = "yp@inquartik.com";
-	final static String LOGIN_PWD = "A1b2c3d4";
+	final static String LOGIN_EMAIL = "youracc";
+	final static String LOGIN_PWD = "yourpwd";
 
 
 	final static String EMAIL_TAG = "ci-email";
